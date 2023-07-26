@@ -8,7 +8,7 @@ This repository is the home of code written on episodes of [Point-Free](https://
 1. [Algebraic Data Types](0004-algebraic-data-types)
 1. [Higher-Order Functions](0005-higher-order-functions)
 1. [Functional Setters](0006-functional-setters)
-1. [Setters and Key Paths](0007-setters-and-key-paths)
+1. [Setters and Key Paths](0007-setters-and-key-paths) 
 1. [Getters and Key Paths](0008-getters-and-key-paths)
 1. [Algebraic Data Types: Exponents](0009-algebraic-data-types-pt-2)
 1. [A Tale of Two Flat-Maps](0010-a-tale-of-two-flat-maps)
