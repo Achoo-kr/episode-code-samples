@@ -52,6 +52,12 @@ enum AppAction {
 
 //[1, 2, 3].reduce(into: <#T##Result#>, <#T##updateAccumulatingResult: (inout Result, Int) throws -> ()##(inout Result, Int) throws -> ()#>)
 
+/*
+ 여타 reducer와 달리 함수 매개변수 타입이 다르다.
+ counterReducer의 state 타입은 inout Int
+ 다른 reducer의 state 타입은 inout AppState
+ Combine 함수로 reducer를 묶기 위해서는 함수 타입이 모두 같아야하지만 counterReducer는 작은 단위의 reducer로서, 이를 pullback 함수로 사용해서 합칠 것이다.
+ */
 func counterReducer(state: inout Int, action: AppAction) {
   switch action {
   case .counter(.decrTapped):
@@ -65,6 +71,10 @@ func counterReducer(state: inout Int, action: AppAction) {
   }
 }
 
+/*
+ primeModalReducer의 state는 더 작은 단위까지 쪼개지 않은 이유
+ primeModalReducer 함수 내에는 여러 state가 필요해서 쪼개면 더 비효율적이다.
+ */
 func primeModalReducer(state: inout AppState, action: AppAction) {
   switch action {
   case .primeModal(.removeFavoritePrimeTapped):
@@ -85,6 +95,9 @@ struct FavoritePrimesState {
   var activityFeed: [AppState.Activity]
 }
 
+/*
+ 기존 AppState의 모든 state를 필요로하지 않기에, favoritePrimes, activityFeed 두 개의 state 변수만 갖는 FavoritePrimesState 구조체 정의 후 활용
+ */
 func favoritePrimesReducer(state: inout FavoritePrimesState, action: AppAction) {
   switch action {
   case let .favoritePrimes(.deleteFavoritePrimes(indexSet)):
@@ -102,6 +115,11 @@ func favoritePrimesReducer(state: inout FavoritePrimesState, action: AppAction) 
 //  switch action {
 //  }
 //}
+
+/*
+ State의 타입이 같고, Action의 타입이 같은 작은 reducer들을
+ 하나의 큰 reducer로 결합하여 실행하는 함수
+ */
 
 func combine<Value, Action>(
   _ reducers: (inout Value, Action) -> Void...
@@ -125,15 +143,32 @@ final class Store<Value, Action>: ObservableObject {
     self.reducer(&self.value, action)
   }
 }
+
+/*
+ GlobalValue에 포함되어있는 프로퍼티를 가져올 수만 있다면(LocalValue) LocalValue에 적용할 작은 단위의 reducer를 구성하고 이를 GlobalValue reducer와 같이 결합하는 방법 -> pullback
+ LocalValue의 값을 reducer에 전달하고 변경된 값을 다시 GlobalValue에 적용하여야 한다. 이 과정에 GlobalValue의 get, set 과정이 따라오는데, 이를 한번에 하기 위해 KeyPath 방법을 사용
+ KeyPath를 사용함으로써 return 클로저 구문이 더 간결해짐
+ */
 func pullback<LocalValue, GlobalValue, Action>(
   _ reducer: @escaping (inout LocalValue, Action) -> Void,
-  value: WritableKeyPath<GlobalValue, LocalValue>
+  // get: @escaping(GlobalValue) -> LocalValue,
+  // set: @escaping(inout GlobalValue, LocalValue) -> Void
+  // get, set을 value로 통합
+  value: WritableKeyPath<GlobalValue, LocalValue> // localValue의 변화를 GlobalValue에
 ) -> (inout GlobalValue, Action) -> Void {
   return { globalValue, action in
+//      var localValue = get(globalValue)
+//      reducer(&localValue, action)
+//      set(&globalValue, localValue)
     reducer(&globalValue[keyPath: value], action)
   }
 }
 
+/*
+ pullback 함수를 통해 favoritePrimesReducer에 전달할 KeyPath가 필요하다.
+ AppState에 새로운 변수 favoritePrimesState get / set 를 작성하여 AppState의 favoritePrimes, activityFeed의 값을 전달하면서
+ AppState의 KeyPath를 전달하면서 pullback 작업을 이끌어낼 수 있다.
+ */
 extension AppState {
   var favoritePrimesState: FavoritePrimesState {
     get {
@@ -154,6 +189,10 @@ let _appReducer = combine(
   primeModalReducer,
   pullback(favoritePrimesReducer, value: \.favoritePrimesState)
 )
+
+/*
+ AppState -> appState를 이끌어내는 pullback
+ */
 let appReducer = pullback(_appReducer, value: \.self)
   //combine(combine(counterReducer, primeModalReducer), favoritePrimesReducer)
 
