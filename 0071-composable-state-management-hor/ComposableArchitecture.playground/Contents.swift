@@ -136,26 +136,44 @@ func counterReducer(state: inout Int, action: CounterAction) {
   }
 }
 
+// MARK: - 고차 reducer 적용을 위한 reducer 변화
+/*
+ primeModalReducer, favoritePrimesReducer의 변경사항
+ SwiftUI의 서로 다른 View에서 Action을 수행할 때, 다른 reducer가 호출되는데
+ 서로 다른 reducer에 같은 기능을 하는 코드가 있었다. (Action에 대한 결과가 서로 중첩되는 부분이 있었기 때문이다.)
+ 예를들어, 일반 소수 목록 뷰에서 소수를 삭제하는 것과, 좋아하는 소수 목록 뷰에서 소수를 삭제하는 것. 삭제 후에 '삭제 활동 피드'를 기록하는 로직이 서로 같다.
+ 이렇게 서로 밀접한 로직이 서로 다른 reducer에 존재한다. 이러한 유형은 서로 다른 모듈에 있는 reducer에서 나타날 수도 있고 그렇게 되면 추후 수정을 하거나 추적하기 어려워진다.
+ 따라서 여기에 고차 reducer를 적용하여 return으로 클로저(고차함수)를 반환 할 때, 모든 Action에 대해 검사를 reducer 실행 전 선제적으로 수행한다.
+ 검사 결과, 밀접한 로직을 수행해야하는 Action인 경우 밀접한 로직을 수행하고 더 간단히 축소된 reducer를 실행하는 식으로 할 수 있다.
+ 이 과정으로 reducer는 더 작은 단위로 된다.
+ */
 func primeModalReducer(state: inout AppState, action: PrimeModalAction) {
   switch action {
   case .removeFavoritePrimeTapped:
     state.favoritePrimes.removeAll(where: { $0 == state.count })
-
+//  state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(state.count))) 삭제
   case .saveFavoritePrimeTapped:
     state.favoritePrimes.append(state.count)
+//  state.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(state.count)))
   }
 }
 
+// favoritePrimesReducer의 변경으로 필요없음.
 //struct FavoritePrimesState {
 //  var favoritePrimes: [Int]
 //  var activityFeed: [AppState.Activity]
 //}
 
+/*
+ favoritePrimesReducer는 이제 activityFeed를 사용하지 않으므로, 매개변수는 FavoritePrimesState 타입에서 [Int] 타입으로 더욱 지역적인 타입 사용 가능
+ 따라서, FavoritePrimesState 와 관련된 모든 코드는 불필요해짐
+ */
 func favoritePrimesReducer(state: inout [Int], action: FavoritePrimesAction) {
   switch action {
   case let .deleteFavoritePrimes(indexSet):
     for index in indexSet {
       state.remove(at: index)
+//    state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(state.favoritePrimes[index]))) 삭제
     }
   }
 }
@@ -198,6 +216,7 @@ func pullback<LocalValue, GlobalValue, LocalAction, GlobalAction>(
   }
 }
 
+// favoritePrimesReducer의 변경으로 필요없음.
 //extension AppState {
 //  var favoritePrimesState: FavoritePrimesState {
 //    get {
@@ -236,14 +255,23 @@ struct EnumKeyPath<Root, Value> {
 }
 // \AppAction.counter // EnumKeyPath<AppAction, CounterAction>
 
+/*
+ 고차함수 reducer
+ 
+ */
 func activityFeed(
   _ reducer: @escaping (inout AppState, AppAction) -> Void
 ) -> (inout AppState, AppAction) -> Void {
 
   return { state, action in
     switch action {
-    case .counter:
+    case .counter: // counter Action에서 activityFeed 관련된 Effect가 없으므로 break 처리(무시)
       break
+        /*
+         reducer간 동일한 기능을 하는 로직을 reducer 전에 선제적으로 Action을 switch로 검사 후 로직 수행한다.
+         이로서, reducer간 동일한 기능을 하는 로직을 한 곳에서 관리하고 수정할 수 있음.
+         reducer는 더 간결해짐.
+         */
     case .primeModal(.removeFavoritePrimeTapped):
       state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(state.count)))
 
@@ -282,6 +310,11 @@ var state = AppState()
 //)
 //counterReducer(state: state, action: .decrTapped)
 
+/*
+activityFeed의 변화를 확인하기 위한 로깅 기능이 추가된 고차 reducer 함수
+고차 reducer 함수를 사용하면 여러가지 기능을 추가한 reducer를 만들어 선택적으로 사용 가능.
+ex) 로깅이 있는 reducer, 로깅 없는 reducer, 추가적인 상태 변경을 위한 reducer 등
+ */
 func logging<Value, Action>(
   _ reducer: @escaping (inout Value, Action) -> Void
 ) -> (inout Value, Action) -> Void {
@@ -402,6 +435,14 @@ struct ContentView: View {
   }
 }
 
+/*
+ 고차 reducer를 사용하게 되면, 다음처럼 appReducer 상위에 상위에 상위에 함수를 덮어 아래처럼 지저분해질 수 있다.
+ bar(foo(logger(activityFeed(appReducer))))
+
+ 이 때 사용하기 좋은, Overture 라이브러리를 사용하면,
+ 함수명 나열만으로 중첩 함수를 보기 좋게 표현할 수 있다.
+  -> with(appReducer, compose(logging, activityFeed))
+ */
 // import Overture
 
 import PlaygroundSupport
@@ -409,7 +450,7 @@ PlaygroundPage.current.liveView = UIHostingController(
   rootView: ContentView(
     store: Store(
       initialValue: AppState(),
-//      reducer: logging(activityFeed(appReducer))
+//      reducer: logging(activityFeed(appReducer)) 을 보기좋게 아래처럼 Overture 라이브러리 함수를 사용하여 표현
       reducer: with(
         appReducer,
         compose(
