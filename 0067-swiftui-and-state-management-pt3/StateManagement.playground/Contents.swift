@@ -3,57 +3,57 @@ import SwiftUI
 
 
 struct WolframAlphaResult: Decodable {
-  let queryresult: QueryResult
-
-  struct QueryResult: Decodable {
-    let pods: [Pod]
-
-    struct Pod: Decodable {
-      let primary: Bool?
-      let subpods: [SubPod]
-
-      struct SubPod: Decodable {
-        let plaintext: String
-      }
+    let queryresult: QueryResult
+    
+    struct QueryResult: Decodable {
+        let pods: [Pod]
+        
+        struct Pod: Decodable {
+            let primary: Bool?
+            let subpods: [SubPod]
+            
+            struct SubPod: Decodable {
+                let plaintext: String
+            }
+        }
     }
-  }
 }
 
 
 func wolframAlpha(query: String, callback: @escaping (WolframAlphaResult?) -> Void) -> Void {
-  var components = URLComponents(string: "https://api.wolframalpha.com/v2/query")!
-  components.queryItems = [
-    URLQueryItem(name: "input", value: query),
-    URLQueryItem(name: "format", value: "plaintext"),
-    URLQueryItem(name: "output", value: "JSON"),
-    URLQueryItem(name: "appid", value: wolframAlphaApiKey),
-  ]
-
-  URLSession.shared.dataTask(with: components.url(relativeTo: nil)!) { data, response, error in
-    callback(
-      data
-        .flatMap { try? JSONDecoder().decode(WolframAlphaResult.self, from: $0) }
-    )
-  }
-  .resume()
+    var components = URLComponents(string: "https://api.wolframalpha.com/v2/query")!
+    components.queryItems = [
+        URLQueryItem(name: "input", value: query),
+        URLQueryItem(name: "format", value: "plaintext"),
+        URLQueryItem(name: "output", value: "JSON"),
+        URLQueryItem(name: "appid", value: wolframAlphaApiKey),
+    ]
+    
+    URLSession.shared.dataTask(with: components.url(relativeTo: nil)!) { data, response, error in
+        callback(
+            data
+                .flatMap { try? JSONDecoder().decode(WolframAlphaResult.self, from: $0) }
+        )
+    }
+    .resume()
 }
 
 
 func nthPrime(_ n: Int, callback: @escaping (Int?) -> Void) -> Void {
-  wolframAlpha(query: "prime \(n)") { result in
-    callback(
-      result
-        .flatMap {
-          $0.queryresult
-            .pods
-            .first(where: { $0.primary == .some(true) })?
-            .subpods
-            .first?
-            .plaintext
-      }
-      .flatMap(Int.init)
-    )
-  }
+    wolframAlpha(query: "prime \(n)") { result in
+        callback(
+            result
+                .flatMap {
+                    $0.queryresult
+                        .pods
+                        .first(where: { $0.primary == .some(true) })?
+                        .subpods
+                        .first?
+                        .plaintext
+                }
+                .flatMap(Int.init)
+        )
+    }
 }
 
 //nthPrime(1_000_000) { p in
@@ -62,27 +62,27 @@ func nthPrime(_ n: Int, callback: @escaping (Int?) -> Void) -> Void {
 
 
 struct ContentView: View {
-  @ObservedObject var state: AppState
-
-  var body: some View {
-    NavigationView {
-      List {
-        NavigationLink(destination: CounterView(state: self.state)) {
-          Text("Counter demo")
+    @ObservedObject var state: AppState
+    
+    var body: some View {
+        NavigationView {
+            List {
+                NavigationLink(destination: CounterView(state: self.state)) {
+                    Text("Counter demo")
+                }
+                NavigationLink(destination: FavoritePrimesView(state: self.$state.favoritePrimesState)) {
+                    Text("Favorite primes")
+                }
+            }
+            .navigationBarTitle("State management")
         }
-        NavigationLink(destination: FavoritePrimesView(state: self.$state.favoritePrimesState)) {
-          Text("Favorite primes")
-        }
-      }
-      .navigationBarTitle("State management")
     }
-  }
 }
 
 private func ordinal(_ n: Int) -> String {
-  let formatter = NumberFormatter()
-  formatter.numberStyle = .ordinal
-  return formatter.string(for: n) ?? ""
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .ordinal
+    return formatter.string(for: n) ?? ""
 }
 
 //BindableObject
@@ -90,165 +90,196 @@ private func ordinal(_ n: Int) -> String {
 import Combine
 
 class AppState: ObservableObject {
-  @Published var count = 0
-  @Published var favoritePrimes: [Int] = []
-  @Published var loggedInUser: User? = nil
-  @Published var activityFeed: [Activity] = []
-
-  struct Activity {
-    let timestamp: Date
-    let type: ActivityType
-
-    enum ActivityType {
-      case addedFavoritePrime(Int)
-      case removedFavoritePrime(Int)
+    @Published var count = 0
+    @Published var favoritePrimes: [Int] = []
+    /// @Published 속성 래퍼를 사용하면 아래 상용구는 필요없어집니다.
+    /// var loggedInUser: User? {
+    ///  willSet { self.objectWillChange.send() }
+    /// }
+    @Published var loggedInUser: User? = nil
+    @Published var activityFeed: [Activity] = []
+    
+    struct Activity {
+        let timestamp: Date
+        let type: ActivityType
+        
+        enum ActivityType {
+            case addedFavoritePrime(Int)
+            case removedFavoritePrime(Int)
+        }
     }
-  }
-
-  struct User {
-    let id: Int
-    let name: String
-    let bio: String
-  }
+    
+    struct User {
+        let id: Int
+        let name: String
+        let bio: String
+    }
 }
 
 struct PrimeAlert: Identifiable {
-  let prime: Int
-
-  var id: Int { self.prime }
+    let prime: Int
+    
+    var id: Int { self.prime }
 }
 
 struct CounterView: View {
-  @ObservedObject var state: AppState
-  @State var isPrimeModalShown: Bool = false
-  @State var alertNthPrime: PrimeAlert?
-  @State var isNthPrimeButtonDisabled = false
-
-  var body: some View {
-    VStack {
-      HStack {
-        Button(action: { self.state.count -= 1 }) {
-          Text("-")
+    @ObservedObject var state: AppState
+    @State var isPrimeModalShown: Bool = false
+    @State var alertNthPrime: PrimeAlert?
+    @State var isNthPrimeButtonDisabled = false
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Button(action: { self.state.count -= 1 }) {
+                    Text("-")
+                }
+                Text("\(self.state.count)")
+                Button(action: { self.state.count += 1 }) {
+                    Text("+")
+                }
+            }
+            Button(action: { self.isPrimeModalShown = true }) {
+                Text("Is this prime?")
+            }
+            Button(action: self.nthPrimeButtonAction) {
+                Text("What is the \(ordinal(self.state.count)) prime?")
+            }
+            /// 상태값으로 버튼의 활성화 여부를 결정합니다.
+            .disabled(self.isNthPrimeButtonDisabled)
         }
-        Text("\(self.state.count)")
-        Button(action: { self.state.count += 1 }) {
-          Text("+")
+        .font(.title)
+        .navigationBarTitle("Counter demo")
+        .sheet(isPresented: self.$isPrimeModalShown) {
+            IsPrimeModalView(state: self.state)
         }
-      }
-      Button(action: { self.isPrimeModalShown = true }) {
-        Text("Is this prime?")
-      }
-      Button(action: self.nthPrimeButtonAction) {
-        Text("What is the \(ordinal(self.state.count)) prime?")
-      }
-      .disabled(self.isNthPrimeButtonDisabled)
+        .alert(item: self.$alertNthPrime) { alert in
+            Alert(
+                title: Text("The \(ordinal(self.state.count)) prime is \(alert.prime)"),
+                dismissButton: .default(Text("Ok"))
+            )
+        }
     }
-    .font(.title)
-    .navigationBarTitle("Counter demo")
-    .sheet(isPresented: self.$isPrimeModalShown) {
-      IsPrimeModalView(state: self.state)
+    /// API 요청으로부터 값을 받아올 때 isNthPrimeButtonDisabled의 값을 true로 설정합니다.
+    /// 값을 받아온 뒤에는 isNthPrimeButtonDisabled의 값을 false로 설정합니다.
+    /// 그 결과 API 요청을 할 때에는 버튼이 비활성화, 요청이 끝난 후에는 버튼이 활성화가 됩니다.
+    /// 이러한 로직은 Button의 Action Closure에서 분리시켜 메서드로 따로 만들 수 있습니다.
+    func nthPrimeButtonAction() {
+        self.isNthPrimeButtonDisabled = true
+        nthPrime(self.state.count) { prime in
+            self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
+            self.isNthPrimeButtonDisabled = false
+        }
     }
-    .alert(item: self.$alertNthPrime) { alert in
-      Alert(
-        title: Text("The \(ordinal(self.state.count)) prime is \(alert.prime)"),
-        dismissButton: .default(Text("Ok"))
-      )
-    }
-  }
-
-  func nthPrimeButtonAction() {
-    self.isNthPrimeButtonDisabled = true
-    nthPrime(self.state.count) { prime in
-      self.alertNthPrime = prime.map(PrimeAlert.init(prime:))
-      self.isNthPrimeButtonDisabled = false
-    }
-  }
 }
 
 private func isPrime (_ p: Int) -> Bool {
-  if p <= 1 { return false }
-  if p <= 3 { return true }
-  for i in 2...Int(sqrtf(Float(p))) {
-    if p % i == 0 { return false }
-  }
-  return true
+    if p <= 1 { return false }
+    if p <= 3 { return true }
+    for i in 2...Int(sqrtf(Float(p))) {
+        if p % i == 0 { return false }
+    }
+    return true
 }
 
 struct IsPrimeModalView: View {
-  @ObservedObject var state: AppState
-
-  var body: some View {
-    VStack {
-      if isPrime(self.state.count) {
-        Text("\(self.state.count) is prime 🎉")
-        if self.state.favoritePrimes.contains(self.state.count) {
-          Button(action: {
-            self.state.favoritePrimes.removeAll(where: { $0 == self.state.count })
-            self.state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(self.state.count)))
-          }) {
-            Text("Remove from favorite primes")
-          }
-        } else {
-          Button(action: {
-            self.state.favoritePrimes.append(self.state.count)
-            self.state.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(self.state.count)))
-
-          }) {
-            Text("Save to favorite primes")
-          }
+    @ObservedObject var state: AppState
+    
+    var body: some View {
+        VStack {
+            if isPrime(self.state.count) {
+                Text("\(self.state.count) is prime 🎉")
+                if self.state.favoritePrimes.contains(self.state.count) {
+                    Button(action: {
+                        self.state.favoritePrimes.removeAll(where: { $0 == self.state.count })
+                        self.state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(self.state.count)))
+                    }) {
+                        Text("Remove from favorite primes")
+                    }
+                } else {
+                    Button(action: {
+                        self.state.favoritePrimes.append(self.state.count)
+                        self.state.activityFeed.append(.init(timestamp: Date(), type: .addedFavoritePrime(self.state.count)))
+                    }) {
+                        Text("Save to favorite primes")
+                    }
+                }
+                
+            } else {
+                Text("\(self.state.count) is not prime :(")
+            }
+            
         }
-
-      } else {
-        Text("\(self.state.count) is not prime :(")
-      }
-
     }
-  }
 }
 
 struct FavoritePrimesState {
-  var favoritePrimes: [Int]
-  var activityFeed: [AppState.Activity]
+    var favoritePrimes: [Int]
+    var activityFeed: [AppState.Activity]
 }
 extension AppState {
-  var favoritePrimesState: FavoritePrimesState {
-    get {
-      FavoritePrimesState(
-        favoritePrimes: self.favoritePrimes,
-        activityFeed: self.activityFeed
-      )
+    var favoritePrimesState: FavoritePrimesState {
+        get {
+            FavoritePrimesState(
+                favoritePrimes: self.favoritePrimes,
+                activityFeed: self.activityFeed
+            )
+        }
+        set {
+            self.favoritePrimes = newValue.favoritePrimes
+            self.activityFeed = newValue.activityFeed
+        }
     }
-    set {
-      self.favoritePrimes = newValue.favoritePrimes
-      self.activityFeed = newValue.activityFeed
+    /// 소수를 추가하고 삭제하는 로직은 현재 두가지의 방식으로 흩어져 있습니다.
+    /// 따라서 AppState에서는 헬퍼 메서드로 적절히 분리해야합니다.
+    /// 즐겨찾기에서도 삭제가 가능하고, 모달 뷰에서도 삭제가 가능하기 때문에 로직을 수정해야 합니다.
+    
+    func addFavoritePrime() {
+        self.favoritePrimes.append(self.count)
+        self.activityFeed.append(Activity(timestamp: Date(), type: .addedFavoritePrime(self.count)))
     }
-  }
+    
+    func removeFavoritePrime(_ prime: Int) {
+        self.favoritePrimes.removeAll(where: { $0 == prime })
+        self.activityFeed.append(Activity(timestamp: Date(), type: .removedFavoritePrime(prime)))
+    }
+    
+    func removeFavoritePrime() {
+        self.removeFavoritePrime(self.count)
+    }
+    
+    func removeFavoritePrimes(at indexSet: IndexSet) {
+        for index in indexSet {
+            self.removeFavoritePrime(self.favoritePrimes[index])
+        }
+    }
+    ///
 }
 
 struct FavoritePrimesView: View {
-  @Binding var state: FavoritePrimesState
-
-  var body: some View {
-    List {
-      ForEach(self.state.favoritePrimes, id: \.self) { prime in
-        Text("\(prime)")
-      }
-      .onDelete { indexSet in
-        for index in indexSet {
-          let prime = self.state.favoritePrimes[index]
-          self.state.favoritePrimes.remove(at: index)
-          self.state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(prime)))
+    @Binding var state: FavoritePrimesState
+    
+    var body: some View {
+        List {
+            ForEach(self.state.favoritePrimes, id: \.self) { prime in
+                Text("\(prime)")
+            }
+            .onDelete { indexSet in
+                for index in indexSet {
+                    let prime = self.state.favoritePrimes[index]
+                    self.state.favoritePrimes.remove(at: index)
+                    self.state.activityFeed.append(.init(timestamp: Date(), type: .removedFavoritePrime(prime)))
+                }
+            }
         }
-      }
+        .navigationBarTitle(Text("Favorite Primes"))
     }
-      .navigationBarTitle(Text("Favorite Primes"))
-  }
 }
 
 
 import PlaygroundSupport
 
 PlaygroundPage.current.liveView = UIHostingController(
-  rootView: ContentView(state: AppState())
-//  rootView: CounterView()
+    rootView: ContentView(state: AppState())
+    //  rootView: CounterView()
 )
