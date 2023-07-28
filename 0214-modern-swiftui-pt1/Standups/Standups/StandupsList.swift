@@ -9,6 +9,7 @@ final class StandupsListModel: ObservableObject {
 }
 
 struct StandupsList: View {
+  /// @StateObject는 Deep Link 및 기능 동작에 적합하지 않은 고립된 작은 섬을 생성하기 때문에 사용하지 않습니다.
   @ObservedObject var model: StandupsListModel
 
   var body: some View {
