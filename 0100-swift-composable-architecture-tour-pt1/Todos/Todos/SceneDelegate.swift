@@ -7,6 +7,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     
+    /// 스토어를 생성하려면 초기상태와 비즈니스 로직 구동을 위한 reducer, 스토어가 실행되는 environment가 필요합니다.
     let contentView = ContentView(
       store: Store(
         initialState: AppState(
