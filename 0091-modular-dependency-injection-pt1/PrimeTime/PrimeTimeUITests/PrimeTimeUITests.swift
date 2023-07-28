@@ -4,7 +4,10 @@ import XCTest
 class PrimeTimeUITests: XCTestCase {
   override func setUp() {
     continueAfterFailure = false
-    Current = .mock
+    Current = .mock // 테스트할 때, mock 데이터로 종속성 테스트 가능 (종속성 모델을 사용하여 모델 안에 정의되어있는 종속성을 가져와 테스트할 수 있다.)
+      // 즉, 모든 테스트가 통제된 환경에서 실행되도록 보장할 수 있다.
+      // 예를 들어 종속성을 다시 작성하여(추가하여) 각 테스트 케이스의 환경을 추가로 조정할 수도 있다.
+
   }
 
   func testExample() {

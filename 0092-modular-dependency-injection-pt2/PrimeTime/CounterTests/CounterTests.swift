@@ -5,6 +5,7 @@ import ComposableArchitectureTestSupport
 import SnapshotTesting
 import SwiftUI
 
+// 전역 상태에서의 테스트는 모두 주석처리
 class CounterTests: XCTestCase {
 //  override func setUp() {
 //    super.setUp()
@@ -53,7 +54,12 @@ class CounterTests: XCTestCase {
 //    store.send(.counter(.primeModalDismissed))
 //    assertSnapshot(matching: vc, as: .windowedImage)
 //  }
+    
+    /*
+     큰 reducer를 테스트하기 쉬운 assert를 만들었기에 assert에 environment 관련된 수정을 하고 스냅샷 테스트
+     */
 
+    // 17을 즉시 반환하는 environment 추가
   func testIncrDecrButtonTapped() {
     assert(
       initialValue: CounterViewState(count: 2),
@@ -66,6 +72,7 @@ class CounterTests: XCTestCase {
     )
   }
 
+    // 17을 즉시 반환하는 environment 추가
   func testNthPrimeButtonHappyFlow() {
 //    Current.nthPrime =
 
@@ -91,6 +98,7 @@ class CounterTests: XCTestCase {
     )
   }
 
+    // environment가 실패하는 의존성 추가
   func testNthPrimeButtonUnhappyFlow() {
 //    Current.nthPrime =
 
@@ -112,6 +120,8 @@ class CounterTests: XCTestCase {
     )
   }
 
+    // reducer 통합 테스트
+    // reducer의 여러 부분을 모두 테스트
   func testPrimeModal() {
 //    Current = .mock
     

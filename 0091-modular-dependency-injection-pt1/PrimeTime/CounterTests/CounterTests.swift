@@ -109,8 +109,13 @@ class CounterTests: XCTestCase {
     )
   }
 
+    /*
+     카운터 기능과 소수 모달 기능이 제대로 통합되는지 확인하는 테스트
+     특히 사용자가 카운터를 1씩 증가시킨 다음 좋아하는 소수에서 해당 숫자를 추가하거나 제거하는 과정을 시뮬레이션 했다.
+     */
   func testPrimeModal() {
-    Current = .mock
+    Current = .mock // Effect에 대해 테스트하는데, 기본적으로 Counter 모듈에만 Effect가 정의되어있기 때문에 PrimeModal과 독립되어있다.
+      // PrimeModal에 대한 Effect를 확인할 수 없기 때문에 해당 테스트 함수에 mock Effect를 반영한다.
     
     assert(
       initialValue: CounterViewState(

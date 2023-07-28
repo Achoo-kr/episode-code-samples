@@ -3,6 +3,7 @@ import ComposableArchitecture
 import PlaygroundSupport
 import SwiftUI
 
+// Counter 모듈의 Environment 의존성 테스트(단일 모듈로서 잘 작동함)
 var environment = CounterEnvironment.mock
 environment.nthPrime = { _ in .sync { 7236893748932 }}
 

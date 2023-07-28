@@ -44,7 +44,7 @@ public func counterReducer(state: inout CounterState, action: CounterAction) -> 
     state.isNthPrimeButtonDisabled = true
     let n = state.count
     return [
-      Current.nthPrime(state.count)
+      Current.nthPrime(state.count) // Current에 접근하여 현재 종속성을 가져온다. 종속성 관련해서는 이제 Current에 의해서면 통제가능
         .map { CounterAction.nthPrimeResponse(n: n, prime: $0) }
         .receive(on: DispatchQueue.main)
         .eraseToEffect()
@@ -69,17 +69,23 @@ public func counterReducer(state: inout CounterState, action: CounterAction) -> 
   }
 }
 
+/*
+ Environment가 작동하는 방식이다.
+ 시작하기가 매우 쉽고, 종속성에 액세스하는 일관된 단일 방법을 제공하며, 모든 종속성을 한 번에 모의하는 것도 간단하다.
+
+ */
 struct CounterEnvironment {
-  var nthPrime: (Int) -> Effect<Int?>
+  var nthPrime: (Int) -> Effect<Int?> // var로 설정한 이유: live, mock 두가지 케이스를 할당해야하기 때문
 }
 
-extension CounterEnvironment {
+extension CounterEnvironment { // 실제 작동하는 종속성
   static let live = CounterEnvironment(nthPrime: Counter.nthPrime)
 }
 
+// 현재의 종속성 주입 (종속성 프로퍼티)
 var Current = CounterEnvironment.live
 
-extension CounterEnvironment {
+extension CounterEnvironment { // mock 데이터로 작동하는 종속성(테스트에 사용)
   static let mock = CounterEnvironment(nthPrime: { _ in .sync { 17 }})
 }
 

@@ -1,6 +1,7 @@
 import XCTest
 @testable import PrimeModal
 
+// PrimeModal에는 environment가 없기 때문에, Void를 할당
 class PrimeModalTests: XCTestCase {
   func testSaveFavoritesPrimesTapped() {
     var state = (count: 2, favoritePrimes: [3, 5])

@@ -11,7 +11,7 @@ public enum FavoritePrimesAction: Equatable {
 public func favoritePrimesReducer(
   state: inout [Int],
   action: FavoritePrimesAction,
-  environment: FavoritePrimesEnvironment
+  environment: FavoritePrimesEnvironment //
 ) -> [Effect<FavoritePrimesAction>] {
   switch action {
   case let .deleteFavoritePrimes(indexSet):
@@ -32,6 +32,8 @@ public func favoritePrimesReducer(
 //      saveEffect(favoritePrimes: state)
     ]
 
+      // 기존에는 전역적인 종속성변수 Current를 사용했지만, 이제 reducer에 전달되는 environment에 전적으로 의존가능해졌으므로,
+      // Current를 사용하지 않고, reducer에 전달된 지역적인 environment로 대체
   case .loadButtonTapped:
     return [
       environment.load("favorite-primes.json")
@@ -87,10 +89,14 @@ extension FileClient {
   )
 }
 
+// FavoritePrimes의 의존성을 구조체로 관리할 필요가 없음.
+// 구조체로서의 다른 기능을 사용하지 않고 오직 래핑하는 기능만 수행하는데, 래핑할필요가 없는 수준임
 //public struct FavoritePrimesEnvironment {
 //  var fileClient: FileClient
 //}
 
+// 차라리 typealias 키워드를 사용하여 FileClient 구조체 자체를 FavoritePrimesEnvironment로 지칭
+// 추후 여기에 의존성을 더 추가한다면 구조체가 아닌 튜플 형식으로 정의 가능
 public typealias FavoritePrimesEnvironment = FileClient
 
 //extension FavoritePrimesEnvironment {
@@ -99,6 +105,8 @@ public typealias FavoritePrimesEnvironment = FileClient
 
 //var Current = FavoritePrimesEnvironment.live
 
+// FilePrimesEnvironment는 곧 FileClient가 되었다.
+// 따라서 테스트에 사용할 FileClient의 mock 데이터 생성
 #if DEBUG
 extension FileClient {
   static let mock = FileClient(

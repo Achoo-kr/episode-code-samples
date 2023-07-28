@@ -44,6 +44,8 @@ public func counterReducer(
     state.count += 1
     return []
 
+      // 전역 변수인 Current 종속성 변수 대신 지역적인 environment 종속성을 사용할 수 있음.
+      // Counter에 대한 종속성을 정의한 CounterEnvironment 타입 변수 environment를 사용
   case .nthPrimeButtonTapped:
     state.isNthPrimeButtonDisabled = true
     let n = state.count
@@ -73,12 +75,15 @@ public func counterReducer(
   }
 }
 
+// ConterEnvironment를 구조체가 아닌 당일 항목의 타입으로 typealias를 할 수 있다.
 //public struct CounterEnvironment {
 //  var nthPrime: (Int) -> Effect<Int?>
 //}
 
+// 추가로 종속석을 추가한다면, 튜플 형태로 관리 가능
 public typealias CounterEnvironment = (Int) -> Effect<Int?>
 
+// CounterEnvironment는 더이상 구조체가 아니므로 제거
 //extension CounterEnvironment {
 //  public static let live = CounterEnvironment(nthPrime: Counter.nthPrime)
 //}
@@ -89,6 +94,13 @@ public typealias CounterEnvironment = (Int) -> Effect<Int?>
 //  static let mock = CounterEnvironment(nthPrime: { _ in .sync { 17 }})
 //}
 
+/*
+ counterViewReducer에는 counterReducer, primeModalReducer을 pullback하여 하나로 관리하는 큰 범위의 reducer이다.
+ 여기에 큰 범위의 environment를 counterReducer, primeModalReducer에 각각 맞게 변환하여 전달해주고 pullback을 받아야하는데,
+ 이 두 종류의 environment를 포괄하는 environment 타입이 필요하다.
+ 그러나 primeModalReducer에 environment는 void 타입이므로, 필요없다. 따라서 counterReducer 자체가 큰 범위의 environment이며
+ 지역적인 environment가 된다.
+ */
 public let counterViewReducer: Reducer<CounterViewState, CounterViewAction, CounterEnvironment> = combine(
   pullback(
     counterReducer,
