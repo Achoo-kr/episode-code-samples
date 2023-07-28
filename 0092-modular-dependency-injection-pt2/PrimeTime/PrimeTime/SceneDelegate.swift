@@ -20,7 +20,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 activityFeed
               )
             ),
-            environment: AppEnvironment(
+            environment: AppEnvironment( // 앱 전체 수준의 Environment를 Store에 할당
               fileClient: .live,
               nthPrime: Counter.nthPrime
 //              counter: .live,

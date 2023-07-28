@@ -11,7 +11,7 @@ public enum PrimeModalAction: Equatable {
 public func primeModalReducer(
   state: inout PrimeModalState,
   action: PrimeModalAction,
-  environment: Void
+  environment: Void // 해당 모듈에서는 Environment가 필요 없기 때문에 Void로 명시
 ) -> [Effect<PrimeModalAction>] {
   switch action {
   case .removeFavoritePrimeTapped:
