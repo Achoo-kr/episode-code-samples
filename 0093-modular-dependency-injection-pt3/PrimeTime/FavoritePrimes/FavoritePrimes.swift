@@ -1,5 +1,5 @@
 import ComposableArchitecture
-import PrimeAlert
+import PrimeAlert // PrimeAlert을 Import하여 더 많은 기능을 사용(Counter에 의존할 필요 없음)
 import SwiftUI
 
 public enum FavoritePrimesAction: Equatable {
@@ -9,11 +9,11 @@ public enum FavoritePrimesAction: Equatable {
   case primeButtonTapped(Int)
   case saveButtonTapped
   case nthPrimeResponse(n: Int, prime: Int?)
-  case alertDismissButtonTapped
+  case alertDismissButtonTapped // alert창 dimiss 버튼 탭 액션 추가
 }
 
 public typealias FavoritePrimesState = (
-  alertNthPrime: PrimeAlert?,
+  alertNthPrime: PrimeAlert?, // Counter Reducer처럼 PrimeAlert을 사용하여 이 값이 nil이 아닌 경우 alert 표시, 사라지게 하는 동작 구현
   favoritePrimes: [Int]
 )
 
@@ -43,7 +43,7 @@ public func favoritePrimesReducer(
 
   case .loadButtonTapped:
     return [
-      environment.fileClient.load("favorite-primes.json")
+      environment.fileClient.load("favorite-primes.json") // environment 업데이트
         .compactMap { $0 }
         .decode(type: [Int].self, decoder: JSONDecoder())
         .catch { error in Empty(completeImmediately: true) }
@@ -55,6 +55,7 @@ public func favoritePrimesReducer(
 //        .eraseToEffect()
     ]
 
+      // 소수를 탭할 때 발생한 Effect
   case let .primeButtonTapped(n):
     return [
       environment.nthPrime(n)
@@ -63,10 +64,12 @@ public func favoritePrimesReducer(
         .eraseToEffect()
     ]
 
+      // n번째 소수를 반환해주는 action을 정의
   case .nthPrimeResponse(let n, let prime):
-    state.alertNthPrime = prime.map { PrimeAlert(n: n, prime: $0) }
+    state.alertNthPrime = prime.map { PrimeAlert(n: n, prime: $0) } // primeAlert 모듈을 import했기에 해당 기능 사용 가능
     return []
 
+      // alert창 dismiss 버튼 탭 action 정의
   case .alertDismissButtonTapped:
     state.alertNthPrime = nil
     return []
@@ -116,6 +119,7 @@ extension FileClient {
 //  var fileClient: FileClient
 //}
 
+// 새로운 의존성을 추가했기 때문에, typealias로 선언된 튜플에 의존성 추가하여 업그레이드
 public typealias FavoritePrimesEnvironment = (
   fileClient: FileClient,
   nthPrime: (Int) -> Effect<Int?>
@@ -198,6 +202,10 @@ public struct FavoritePrimesView: View {
     self.store = store
   }
 
+    /*
+     내가 좋아하는 소수 목록 중에서 하나를 탭할 때 해당 숫자 번째의 소수가 뭔지 알려주는 로직 구현
+     내가 좋아하는 소수 7을 탭한 경우 -> 7번째 소수를 물어보는 로직 구현 (따라서 모든 항목을 버튼으로 구현)
+     */
   public var body: some View {
     List {
       ForEach(self.store.value.favoritePrimes, id: \.self) { prime in
@@ -219,7 +227,7 @@ public struct FavoritePrimesView: View {
           self.store.send(.loadButtonTapped)
         }
       }
-    )
+    ) // 업데이트 된 FavoritePrimesState를 사용할 수 있기에 View 계층 구조에 .alert 수정자 사용
       .alert(item: .constant(self.store.value.alertNthPrime)) { primeAlert in
         Alert(title: Text(primeAlert.title), dismissButton: Alert.Button.default(Text("Ok"), action: {
           self.store.send(.alertDismissButtonTapped)
