@@ -23,7 +23,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             environment: AppEnvironment(
               fileClient: .live,
               nthPrime: Counter.nthPrime,
-              offlineNthPrime: Counter.offlineNthPrime
+              offlineNthPrime: Counter.offlineNthPrime // 전체 앱수준에서의 Store에 Offline 의존성도 추가
 //              counter: .live,
 //              favoritePrimes: .live
             )

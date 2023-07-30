@@ -1,4 +1,4 @@
-
+// CounterView에서 사용한 로직을 FavoritePrimesView에서도 사용하기 위하여 PrimeAlert 기능을 확장하여 로직 구현
 public struct PrimeAlert: Equatable, Identifiable {
   public let n: Int
   public let prime: Int

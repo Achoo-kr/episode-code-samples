@@ -34,12 +34,12 @@ struct AppState: Equatable {
 
 enum AppAction: Equatable {
   case counterView(CounterViewAction)
-  case offlineCounterView(CounterViewAction)
+  case offlineCounterView(CounterViewAction) // 오프라인 ConuterView에 특화된 새로운 Action 세트
   case favoritePrimes(FavoritePrimesAction)
 }
 
 extension AppState {
-  var favoritePrimesState: FavoritePrimesState {
+  var favoritePrimesState: FavoritePrimesState { // FavoritePrimesState에 새로운 의존성 관련 인스턴스가 추가되었기에 수정(Key-Path 기능 설정)
     get {
       (self.alertNthPrime, self.favoritePrimes)
     }
@@ -76,7 +76,7 @@ extension AppState {
 typealias AppEnvironment = (
   fileClient: FileClient,
   nthPrime: (Int) -> Effect<Int?>,
-  offlineNthPrime: (Int) -> Effect<Int?>
+  offlineNthPrime: (Int) -> Effect<Int?> // Offline 의존성에 관련된 새로운 튜플
 )
 
 let appReducer: Reducer<AppState, AppAction, AppEnvironment> = combine(
@@ -86,7 +86,7 @@ let appReducer: Reducer<AppState, AppAction, AppEnvironment> = combine(
     action: /AppAction.counterView,
     environment: { $0.nthPrime }
   ),
-  pullback(
+  pullback( // OfflineCounterView에서 사용할 pullback reducer
     counterViewReducer,
     value: \AppState.counterView,
     action: /AppAction.offlineCounterView,
@@ -133,7 +133,8 @@ func activityFeed(
   }
 }
 
-let isInExperiment = Bool.random()
+let isInExperiment = Bool.random() // 랜덤한 Bool 값을 사용하여 어떤 환경에서 어떤 종속성이 포함된 기능을 사용할지 선택하는 Flag 기능을 제공한다.
+// 물론, 랜덤하게 Bool 값을 선택하는 것이 아니라 정확한 기준의 계산 과정이 필요하지만 여튼간에, 이런 방법도 가능하다는 것을 나타낸다.
 
 struct ContentView: View {
   @ObservedObject var store: Store<AppState, AppAction>
@@ -152,7 +153,7 @@ struct ContentView: View {
             )
           )
         } else {
-          NavigationLink(
+          NavigationLink( // 기존 CounterView를 재활용하고 여기에 새로운 오프라인 종속성을 주입하여 생성된 View
             "Offline counter demo",
             destination: CounterView(
               store: self.store.view(

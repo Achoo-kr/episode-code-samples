@@ -36,7 +36,13 @@ public func nthPrime(_ n: Int) -> Effect<Int?> {
   }
   .eraseToEffect()
 }
-
+/*
+// 외부 API를 호출하는 대신, 로컬에서 간단히 계산을 수행하는 nthPrime 함수 버전(오프라인 종속성)
+ 내부 기능
+ - 1보다 큰 모든 숫자를 반복하고 소수를 만날 때마다 카운트를 증가시킨다.
+ - 소수 카운트가 원하는 숫자에 도달하면 callback 함수를 호출하여 Publisher를 완성한다.
+ 
+ */
 public func offlineNthPrime(_ n: Int) -> Effect<Int?> {
   Future { callback in
     var nthPrime = 1
