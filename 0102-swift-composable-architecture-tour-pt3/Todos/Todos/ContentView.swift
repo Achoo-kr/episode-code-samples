@@ -53,12 +53,17 @@ let appReducer = Reducer<AppState, AppAction, AppEnvironment>.combine(
     case .addButtonTapped:
       state.todos.insert(Todo(id: environment.uuid()), at: 0)
       return .none
-      
+    
+    /// 할일의 완료를 체크할 때 여러개의 할 일을 빠르게 완료하고 싶다면 어떨까요??
+    /// 완료를 체크했을 때 즉시 맨아래로 이동한다는 점은 위의 목표달성에 방해가 되고 있습니다.
+    /// 따라서 정렬이 완료되기 전 잠시 대기하도록 약간의 지연을 추가하는 방법을 제시합니다.
     case .todo(index: _, action: .checkboxTapped):
       struct CancelDelayId: Hashable {}
 
+      /// 작업을 스토어로 다시 보냅니다.
       return Effect(value: AppAction.todoDelayCompleted)
         .delay(for: 1, scheduler: DispatchQueue.main)
+        /// Effect 유형으로 지워 마무리합니다.
         .eraseToEffect()
         .cancellable(id: CancelDelayId(), cancelInFlight: true)
       
